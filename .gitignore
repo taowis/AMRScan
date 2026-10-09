@@ -6,3 +6,26 @@
 
 # Local private notes
 /private_notes/
+
+# Runtime data (historical tracked examples are retained for a later cleanup).
+/results/
+/db/
+/data/
+/databases/
+work/
+.nextflow/
+.nextflow.*
+trace*.txt
+timeline*.html
+report*.html
+dag*.html
+
+# Local environments, caches, and test reports.
+.venv/
+__pycache__/
+*.py[cod]
+.coverage*
+htmlcov/
+coverage.xml
+.pytest_cache/
+.test-results/

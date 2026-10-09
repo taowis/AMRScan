@@ -1,4 +1,6 @@
 # AMRScan - Antimicrobial Resistance Gene Scanner in R
+# LEGACY demonstration: known fixed-path/output-path issues; see README.md.
+# A BLAST match or top bitscore does not establish phenotypic resistance.
 # Implements read QC, FASTA conversion, BLAST, and AMR hit parsing.
 
 # Load required libraries
