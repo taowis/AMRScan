@@ -84,7 +84,7 @@ excluded from this commit. No new genome or AMR database is included.
 ## Final repository tree
 
 ```text
-AMRScan/
+amrscan-dev/
 ├── .github/
 │   └── workflows/
 │       └── ci.yml

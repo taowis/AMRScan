@@ -12,7 +12,7 @@ snapshots, thresholds, and the original report when interpreting results.
 
 ## Project links
 
-- [Source repository](https://github.com/taowis/AMRScan)
+- [Source repository](https://github.com/taowis/amrscan-dev)
 - Historical rendered demonstrations: [R](docs/AMRScan_R.html) and
   [Nextflow](docs/AMRScan_Nextflow.html)
 - [Preprint](https://arxiv.org/abs/2507.08062)
@@ -52,8 +52,8 @@ PR uses a local executor; it does not claim to provide a tested container or
 Conda environment. Archive environment/package versions with each experiment.
 
 ```bash
-git clone https://github.com/taowis/AMRScan.git
-cd AMRScan
+git clone https://github.com/taowis/amrscan-dev.git
+cd amrscan-dev
 
 nextflow run main.nf \
   --input 'assemblies/*.fna' \
