@@ -3,6 +3,7 @@
 import argparse
 import csv
 import importlib.util
+import io
 import json
 from pathlib import Path
 import subprocess
@@ -109,6 +110,33 @@ class HarmonizeTests(unittest.TestCase):
                 self.raw.write_text(content)
                 with self.assertRaises(ValueError):
                     self.convert()
+
+    def test_malformed_quoting_fails_without_publishing_partial_results(self):
+        lines = FIXTURE.read_text().splitlines()
+        record = lines[-1].split("\t")
+        for last_field in ('"unterminated', '"closed"unexpected'):
+            with self.subTest(last_field=last_field):
+                record[-1] = last_field
+                self.raw.write_text("\n".join(lines + ["\t".join(record)]) + "\n")
+                with self.assertRaises(csv.Error):
+                    self.convert()
+                self.assertFalse(self.output.exists())
+                with patch("sys.stderr", new_callable=io.StringIO) as stderr, \
+                     self.assertRaises(SystemExit) as raised:
+                    amrscan.main(["harmonize", "--sample", "upstream", "--raw", str(self.raw),
+                                  "--provenance", str(self.provenance), "--output", str(self.output)])
+                self.assertEqual(raised.exception.code, 1)
+                self.assertIn("AMRScan:", stderr.getvalue())
+                self.assertNotIn("Traceback", stderr.getvalue())
+                self.assertFalse(self.output.exists())
+
+        # Strict parsing must still retain valid quoted evidence exactly.
+        self.raw.write_bytes(FIXTURE.read_bytes())
+        self.mutate("HMM description", 'annotation with "quotes" and\ta tab')
+        count, rows = self.convert()
+        self.assertEqual(count, 24)
+        self.assertEqual(json.loads(rows[0]["raw_record_json"])["HMM description"],
+                         'annotation with "quotes" and\ta tab')
 
     def test_provenance_rejects_wrong_sample_tool_hash_and_failed_run(self):
         for key, value in [("sample_id", "another"), ("tool", "BLAST"),

@@ -78,7 +78,7 @@ def harmonize(raw, provenance, sample, output):
     # Buffer a sample so a malformed row cannot publish a partially valid report.
     rows = []
     with raw.open(newline="") as handle:
-        reader = csv.DictReader(handle, delimiter="\t")
+        reader = csv.DictReader(handle, delimiter="\t", strict=True)
         headers = reader.fieldnames or []
         if len(headers) != len(set(headers)) or not REQUIRED.issubset(headers):
             raise ValueError("Missing or duplicate AMRFinderPlus columns; expected the v4 nucleotide report")
@@ -192,7 +192,7 @@ def main(argv=None):
             call(args)
         else:
             harmonize(args.raw, args.provenance, args.sample, args.output)
-    except (ValueError, KeyError, OSError, subprocess.CalledProcessError) as error:
+    except (ValueError, KeyError, OSError, csv.Error, subprocess.CalledProcessError) as error:
         parser.exit(1, f"AMRScan: {error}\n")
 
 

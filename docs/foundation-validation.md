@@ -10,15 +10,21 @@ provenance mismatch, partial/mutation/non-AMR evidence, failure propagation and
 separation of genotypes from phenotypes. No further blocking issue was found
 within this foundation scope. Biological integration validation remains pending.
 
+The release-candidate review found that unterminated quotes and unexpected text
+after a closing quote could be accepted silently. Strict TSV parsing now rejects
+both cases, returns a concise CLI error and writes no partial result. The new
+regression test failed for both cases before the fix and passes afterward; valid
+quoted evidence still round-trips without changes.
+
 ## Tests executed locally
 
 Environment: macOS; Nextflow 25.04.6; Python 3.14.6; R 4.5.0; BLAST+ 2.16.0.
 
 | Group | Command | Fixtures and assertions | Coverage | Result |
 | --- | --- | --- | --- | --- |
-| Unit/regression | `python3 -m unittest discover -s tests -p test_amrscan.py -v` | 24 NCBI upstream records; corrupted/header-only variants; subprocess mocks; complete evidence retention, no allele/phenotype inference, checksums, invalid input and failure propagation | See line coverage below | PASS: 13 tests |
+| Unit/regression | `python3 -m unittest discover -s tests -p test_amrscan.py -v` | 24 NCBI upstream records; corrupted/header-only variants; subprocess mocks; complete evidence retention, no allele/phenotype inference, checksums, invalid input and failure propagation | See line coverage below | PASS: 14 tests |
 | Workflow | `python3 -m unittest discover -s tests -p test_nextflow.py -v` | Tiny synthetic FASTA/FASTQ, gzip and duplicate-ID files; upstream report; dummy path-only database; actual DSL2 compilation, config, validation, harmonization process and missing-tool failure | Scenario coverage; no numeric Nextflow metric | PASS: 7 tests, including actual legacy BLAST/R no-hit smoke |
-| Full lightweight suite | `python3 -m unittest discover -s tests -p 'test_*.py' -v` | Both groups above | 20/20 scenarios; not a line metric | PASS: 20 tests in 36.933 s; no skips or flaky failures |
+| Full lightweight suite | `python3 -m unittest discover -s tests -p 'test_*.py' -v` | Both groups above | 21/21 scenarios; not a line metric | PASS: 21 tests in 32.422 s; no skips or flaky failures |
 | Python line coverage | `python3 -m trace --count --summary --missing --coverdir .test-results/coverage --module unittest discover -s tests -p test_amrscan.py` | Unit/regression suite above | `bin/amrscan.py`: 162/163 executable lines, 99.4%; entry-point invocation line unmeasured by in-process tests | PASS |
 | R syntax | `Rscript -e 'invisible(parse(file="scripts/AMRScan.R")); invisible(parse(file="tests/test-run.R"))'` | Historical R source and test script | Syntax only, not functional coverage | PASS |
 | Upstream fixture identity | `git hash-object tests/fixtures/amrfinder_v4.0.23.tsv` | Exact upstream report bytes | Git blob `37ddb555d52dacba5ffaff07f04a9a5f30541f8e` | PASS |
