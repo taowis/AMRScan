@@ -1,206 +1,192 @@
 # AMRScan 🧬
 
-**AMRScan** is a hybrid bioinformatics toolkit written in **R** and **Nextflow** for the rapid detection of antimicrobial resistance (AMR) genes from next-generation sequencing (NGS) data. It aligns sequencing reads against a curated AMR gene database (e.g., CARD) using BLAST and reports likely resistance determinants. It also supports both single-sample scripting for rapid testing and scalable, containerized pipelines for high-throughput environments.
+AMRScan v2 is evolving from a BLAST-based resistance gene scanner into a modular
+framework for AMR genotyping, phenotype prediction, benchmarking, and
+generalisability studies. This foundation PR implements **AMR determinant
+calling and evidence-preserving harmonization**. Phenotype prediction, AST
+integration, and machine learning are future, separate layers.
 
----
+A sequence match does not by itself establish phenotypic resistance. A negative
+report also does not establish susceptibility. Retain caller methods, database
+snapshots, thresholds, and the original report when interpreting results.
 
-## 📄 Project Links
-- 💻 [View Source Code on GitHub](https://github.com/biosciences/AMRScan): Explore the full repository
-- 🧬 [Live Report (GitHub Pages)](https://biosciences.github.io/AMRScan/AMRScan_R.html): AMRScan - R Demonstration
-- 🧬 [Live Report (GitHub Pages)](https://biosciences.github.io/AMRScan/AMRScan_Nextflow.html): AMRScan - Nextflow Workflow Demonstration
+## Project links
 
-The two reports presented above were produced using AMRScan_R.Rmd and AMRScan_Nextflow.Rmd, providing comprehensive examples of the workflow with sample input files, result parsing, and final summaries.
+- [Source repository](https://github.com/taowis/AMRScan)
+- Historical rendered demonstrations: [R](docs/AMRScan_R.html) and
+  [Nextflow](docs/AMRScan_Nextflow.html)
+- [Preprint](https://arxiv.org/abs/2507.08062)
 
----
+The demonstrations and manuscripts describe the legacy version, not the v2
+interface. Their historical data and generated reports remain in Git for now.
 
-## 🚀 Features
+## Modular workflow
 
-- Antimicrobial resistance gene detection using BLAST
-- Compatible with reference databases such as CARD
-- Two modes of use:
-  - **R script**: Simple, linear script for single samples
-  - **Nextflow workflow**: Scalable, reproducible, and parallelizable pipeline
-- Supports FASTQ input, automatic conversion, quality control, and output summarization
-- Read quality control from FASTQ inputs
-- Conversion to FASTA and BLAST-compatible formats
-- Automated `blastx` comparison to AMR gene databases
-- Top-hit summarization of resistance genes per read
-- Output in tidy `.csv` format for downstream analysis
-
----
-
-## 🤔 When to Use Which Version?
-
-| Scenario                                             | Use R Script (`AMRScan.R`) | Use Nextflow Workflow (`AMRScan.nf`)  |
-|------------------------------------------------------|----------------------------------------|-------------------------------------|
-| Small dataset / one or two samples                   | ✅ Yes                                 | ✅ Yes                              |
-| Educational / demonstration setting                  | ✅ Yes                                 | ❌ No                               |
-| Quick local prototyping with minimal dependencies    | ✅ Yes                                 | ❌ No                               |
-| Batch processing of many samples                     | ❌ No                                  | ✅ Yes                              |
-| HPC, cloud, or Docker/Conda-based reproducibility    | ❌ No                                  | ✅ Yes                              |
-| Automated multi-step workflows (BLAST, parsing, etc) | ❌ No                                  | ✅ Yes                              |
-
-## ✅ How the files are used in the dual-mode setup
-
-| File              | Role                                                    | Executed in R? | Executed by Nextflow? |
-|-------------------|---------------------------------------------------------|----------------|-----------------------|
-| `AMRScan.R`       | Full R script version (standalone)                      | ✅ Yes         | ❌ No                 |
-| `AMRScan.nf`      | Nextflow pipeline script (main workflow logic)          | ❌ No          | ✅ Yes                |
-| `nextflow.config` | Configuration file for resource settings and parameters | ❌ No          | ✅ Yes                |
-
----
-## 🚀 Usage
-
-You can run AMRScan in two modes:
-
-### 🧪 Option 1: R Script
-
-#### Requirements
-- [R (>= 4.0)](https://cran.r-project.org/)
-- R packages: `dplyr`, `RCurl`
-- Bioconductor packages: `ShortRead`, `Biostrings`
-- [NCBI BLAST+](https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/)
-
-#### 📥 Installation
-
-Ensure the above requried R, R packages and NCBI BLAST+ are installed.
-
-Clone the repo:
-```bash
-git clone https://github.com/biosciences/AMRScanR.git
-cd AMRScanR
+```text
+main.nf → workflows/amrscan.nf
+          ├─ modules/local/amrfinderplus.nf → raw report + log + provenance
+          └─ modules/local/harmonize_amrfinder.nf → harmonized TSV
 ```
 
-Install dependencies in R:
-```r
-install.packages(c("dplyr", "RCurl"))
-BiocManager::install(c("ShortRead", "Biostrings"))
-```
+Use assembled nucleotide FASTA (`.fa`, `.fna`, `.fasta`, optionally `.gz`). Raw
+FASTQ, protein/GFF combined searches and per-sample organism metadata are not
+implemented in this first v2 interface. Sample IDs come from filenames with both
+FASTA and gzip suffixes removed. They must be unique and contain only letters,
+digits, `_`, `.`, `-`, beginning with a letter or digit. Duplicate IDs fail before
+any tasks are scheduled.
 
-Run
-```r
-source("scripts/AMRScan_standalone.R")
-```
-The script will:
-•Clean your FASTQ input
-•Convert reads to FASTA
-•BLAST against the CARD database (auto-downloads and formats if needed)
-•Generate a AMR_hits_summary.csv in the results/ folder
+Requirements:
 
-#### Output
-- Results written to `results/AMR_hits_summary.csv`
+- Nextflow **25.04.6** (the CI baseline), Java **17** or a compatible Nextflow JVM.
+- Python **3.10+**, standard library only (CI: 3.12).
+- AMRFinderPlus **4.0.23** is the documented caller baseline; the adapter targets
+  the v4 nucleotide column names. This PR has **not** validated a real caller run.
+  Other v4 releases require integration validation before benchmarking.
+- A separately installed, indexed AMRFinderPlus database snapshot compatible
+  with the caller. Record the release date/version and use an immutable directory.
+  No database is downloaded, updated or bundled by this workflow.
 
-### 🧬 Option 2: Nextflow Workflow
-
-#### Requirements
-- Nextflow (>= 22.04.0)
-- Docker or Conda (recommended for reproducibility)
-- Tools: `wget`, `blastx`, `seqtk`, `Rscript`
-
-#### Run
+Follow the [NCBI installation instructions](https://github.com/ncbi/amr/wiki/Installing-AMRFinder).
+Install the caller and its BLAST/HMMER dependencies in your environment. The first
+PR uses a local executor; it does not claim to provide a tested container or
+Conda environment. Archive environment/package versions with each experiment.
 
 ```bash
-# Basic usage
-nextflow run workflow/AMRScan.nf --input data/GCF_037966445.1_ASM3796644v1_genomic.fna --outdir results
+git clone https://github.com/taowis/AMRScan.git
+cd AMRScan
 
-# With custom parameters
+nextflow run main.nf \
+  --input 'assemblies/*.fna' \
+  --amrfinder_db /absolute/path/to/versioned-amrfinder-db \
+  --outdir results/v2 --threads 4
+
+# For a cohort in the same supported taxonomic group:
+nextflow run main.nf \
+  --input 'assemblies/*.fna.gz' \
+  --amrfinder_db /absolute/path/to/versioned-amrfinder-db \
+  --amrfinder_organism Escherichia --outdir results/escherichia
+```
+
+The organism option enables taxon-specific behavior, including curated mutation
+screening. Without it, the result is not a comprehensive mutation screen. This
+mode searches nucleotide assemblies only and does not perform protein HMM
+searches. See [NCBI usage](https://github.com/ncbi/amr/wiki/Running-AMRFinderPlus)
+and [interpretation](https://github.com/ncbi/amr/wiki/Interpreting-results).
+
+| Parameter | Default | Meaning |
+| --- | --- | --- |
+| `input` | required | One FASTA or a quoted file glob |
+| `outdir` | `results/v2` | Publication directory |
+| `threads` | `4` | CPUs per caller task |
+| `amrfinder_db` | required | Existing, indexed database directory |
+| `amrfinder_bin` | `amrfinder` | Executable name on PATH or absolute executable path |
+| `amrfinder_organism` | unset | One supported taxon for all inputs in this run |
+| `amrfinder_plus` | `false` | Include caller's plus elements; retain their types |
+| `amrfinder_identity` | `-1` | Curated identity thresholds with caller fallback |
+| `amrfinder_coverage` | `0.5` | Caller reference coverage cutoff, as a fraction |
+| `validate_only` | `false` | Validate paths/parameters, without running processes |
+
+Identity overrides in `[0,1]` replace the caller's curated identity policy; use
+only with scientific justification. Provenance records the requested values;
+curated per-family settings remain in the identified database snapshot. The
+workflow requests all equally scoring references and applies no further top-hit
+selection. AMRFinderPlus still applies its own curation and filtering rules.
+
+Outputs per sample:
+
+```text
+results/v2/
+├── raw/amrfinderplus/<sample>/
+│   ├── <sample>.amrfinder.tsv       # Original caller report, unmodified
+│   ├── <sample>.amrfinder.log       # Caller stdout/stderr, including runtime versions
+│   └── <sample>.provenance.json     # Command, software version, input/db/report hashes
+└── harmonized/<sample>.amr.tsv      # Standard columns + complete raw records
+```
+
+See [result schema](docs/result-schema.md). Database content is fingerprinted
+per sample, including the relative filenames and file SHA-256 hashes; this
+costs additional I/O on large cohorts. Keep the database immutable during a run.
+A successful no-hit report produces a header-only harmonized TSV, while its raw
+report and provenance remain available. Failed calls never produce harmonized
+results; task logs and failure provenance remain in the Nextflow work directory.
+Use a fresh output directory per experiment to avoid confusing old and new files.
+
+## Legacy compatibility
+
+`workflow/AMRScan.nf`, its adjacent config, `scripts/AMRScan.R`, the R Markdown
+examples, and historical files are retained. Their algorithms have not been
+rewritten in this PR. The legacy Nextflow FASTA/no-hit path has an optional small
+smoke test using BLAST+ and R; other historical paths are not newly validated.
+
+```bash
 nextflow run workflow/AMRScan.nf \
-    --input data/*.fna \
-    --outdir results \
-    --evalue 1e-10 \
-    --threads 8 \
-    --min_quality 25
+  --input data/GCF_037966445.1_ASM3796644v1_genomic.fna \
+  --card_db db/protein_fasta_protein_homolog_model.fasta \
+  --outdir results/legacy --threads 4
 ```
 
-#### Configuration
-`workflow/nextflow.config` includes basic container settings. You can customize profiles for HPC/cloud usage.
+Legacy tools include BLAST+, R with `dplyr`/`magrittr`, and for FASTQ,
+`Biostrings`/`ShortRead`. The old config is not a complete reproducible container
+environment. Its highest-bitscore summary is a display ranking, not biological
+truth or a phenotype call; inspect the full detailed output. The HTML report
+process remains disabled as in the original workflow.
 
----
+The standalone R script is a **historical demonstration with known defects**:
+it changes to a fixed local directory, writes and reads different BLAST output
+paths, and does not ensure the final directory exists. Do not treat
+`tests/test-run.R` as an automated v2 test. Fixing that interface and expanding
+legacy FASTQ validation belong in a separate compatibility PR.
 
-## 📂 Folder Structure
+## Tests
 
-```
-AMRScan/
-├── AMRScan_Nextflow.Rmd        # Nextflow Markdown for live demo
-├── AMRScan_R.Rmd               # R Markdown for live demo
-├── data/                       # Input FASTA file(s)
-│   └── GCF_037966445.1_ASM3796644v1_genomic.fna
-├── db/                         # BLAST database folder
-│   └── protein_fasta_protein_homolog_model.fasta
-├── DESCRIPTION                 # Package or metadata description
-├── docs/                       # GitHub Pages rendered site
-│   ├── AMRScan_Nextflow.html
-│   ├── AMRScan_R.html
-│   └── index.html
-├── LICENSE                     # Software license
-├── paper.md                    # JOSS submission manuscript
-├── paper.bib                   # Bibliography for JOSS paper
-├── README.md                   # Project documentation
-├── results/                    # Output results directory
-├── blast/                      # Intermediate BLAST results
-│   └── GCF_037966445.1_ASM3796644v1_genomic_blast_results.tsv
-├── final/                      # Final processed results
-│   ├── GCF_037966445.1_ASM3796644v1_genomic_AMR_hits_detailed.csv
-│   └── GCF_037966445.1_ASM3796644v1_genomic_AMR_hits_summary.csv
-├── preprocessed/               # Preprocessed intermediate files
-│   ├── GCF_037966445.1_ASM3796644v1_genomic.fasta
-│   └── GCF_037966445.1_ASM3796644v1_genomic_preprocess.log
-├── scripts/                    # Scripts for analysis and setup
-│   └── AMRScan.R               # Standalone R version
-├── tests/                      # Test files
-│   ├── test-run.R              # R test resource
-├── workflow/                   # Nextflow pipeline and configuration
-│   ├── AMRScan.nf              # Nextflow script
-│   └── nextflow.config         # Configuration file
+```bash
+# Offline caller-wrapper and harmonization tests; no third-party Python packages
+python3 -m unittest discover -s tests -p test_amrscan.py -v
+
+# Nextflow syntax/config, error handling, actual harmonization process, optional legacy smoke
+python3 -m unittest discover -s tests -p test_nextflow.py -v
+
+# Entire lightweight suite (missing external tools are explicitly skipped)
+python3 -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
----
+[Testing details and coverage commands](tests/README.md) describe fixture scope
+and distinguish mocks, upstream expected reports, and real integration tests.
+GitHub Actions pins Nextflow, checks unit branch coverage, and runs workflow
+validation without AMR databases. AMRFinderPlus integration remains pending.
 
-## 📂 Input Example
+## Directory layout and next steps
 
-Download fasta data from:
-
-```
-https://www.ncbi.nlm.nih.gov/assembly/GCA_037966445.1
-```
-
-The fasta data source from:
-
-```
-Munim, M. A., Tanni, A. A., Hossain, M. M., Chakma, K., Mannan, A., Islam, S. M. R., Tiwari, J. G., & Gupta, S. D. (2024). *Whole genome sequencing of multidrug-resistant Klebsiella pneumoniae from poultry in Noakhali, Bangladesh: Assessing risk of transmission to humans in a pilot study*. Comparative Immunology, Microbiology and Infectious Diseases, 114, 102246. https://doi.org/10.1016/j.cimid.2024.102246
-```
-Download the comprehensive antibiotic resistance database from:
-https://card.mcmaster.ca/download/0/broadstreet-v4.0.1.tar.bz2
-
-Uncompress above tar.bz2 file, copy protein_fasta_protein_homolog_model.fasta to data folder
-
-
-## 📊 Example Output
-
-| Query                | Subject     | Identity | Length | Evalue   | Bitscore | Annotation                    |
-|----------------------|-------------|----------|--------|----------|----------|-------------------------------|
-| NZ_JBBPBW010000028.1 | ARO:3003039 | 40.839   | 453    | 1.55e-72 | 252      | OprA [Pseudomonas aeruginosa] |
-| NZ_JBBPBW010000035.1 | ARO:3004826 | 100.000  | 285    | 0        | 587      | LAP-2 [Enterobacter cloacae]  |
-
----
-
-## 📊 Test
-
-Test AMRScan.R
-```r
-source("tests/test-run.R")
+```text
+bin/                    Python caller/provenance and harmonization CLI
+conf/                   Executor/resource defaults
+modules/local/          DSL2 caller and harmonization modules
+workflows/              Composable v2 orchestration
+main.nf                 v2 entry point
+nextflow.config         v2 defaults
+workflow/               Legacy entry point/config
+scripts/                Legacy standalone R demonstration
+schemas/                Future AST interface contract
+training/               AST ingestion and future model-training contracts
+benchmark/              Lineage/country/time evaluation contract
+tests/                  Small fixtures and automated tests
+docs/                   Schema, validation notes and historical reports
+paper/                  Historical manuscripts, retained
+data/, db/, results/    Historical tracked examples; new generated files ignored
 ```
 
----
+PR #2 should validate real AMRFinderPlus runs with a pinned software/database
+environment, known positive/negative controls, and multi-sample provenance.
+Follow with AST ingestion and explicit assay/breakpoint metadata, additional
+caller adapters (RGI/CARD and ResFinder), and leakage-aware evaluation. Full ML
+implementation is deliberately outside this foundation PR. See
+[training](training/README.md), [benchmark](benchmark/README.md), and
+[tracked-data cleanup notes](docs/tracked-data-audit.md).
 
-## 🧾 Citation
+## Citation and license
 
-If you use **AMRScan** in your research, please cite the associated JOSS paper (under review):
-
-> Lai, K. (2025). *AMRScan: A hybrid R and Nextflow toolkit for rapid antimicrobial resistance gene detection*. arXiv: https://arxiv.org/abs/2507.08062 (submitted to *Journal of Open Source Software*). https://github.com/biosciences/AMRScan
-
----
-
-## 🪪 License
-
-MIT © 2025 Kaitao Lai
+Lai, K. (2025). *AMRScan: A hybrid R and Nextflow toolkit for rapid antimicrobial
+resistance gene detection.* [arXiv:2507.08062](https://arxiv.org/abs/2507.08062).
+Also cite each caller and database used in an analysis. Historical source code
+is under the repository MIT license; the NCBI test fixture has its own public
+domain notice in `tests/fixtures/NCBI-LICENSE.txt`.

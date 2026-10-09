@@ -1,0 +1,72 @@
+# Lightweight tests
+
+Run from the repository root:
+
+```bash
+python3 -m unittest discover -s tests -p test_amrscan.py -v
+python3 -m unittest discover -s tests -p test_nextflow.py -v
+python3 -m unittest discover -s tests -p 'test_*.py' -v
+```
+
+The unit suite validates 24 authentic upstream records, including exact alleles,
+BLAST family assignments, partials, internal stops, negative strands, multiple
+mutations and non-AMR elements. Tests deliberately corrupt copies to exercise
+failure paths and derive a header-only no-hit case. Caller-wrapper tests mock
+subprocess execution and replay that reference file; their version marker is
+`TEST-DOUBLE`, never a claimed installed caller version. They test argument
+construction, database/input/report checksums and failed-command propagation.
+
+Nextflow tests invoke the actual installed runtime in isolated temporary
+directories. They compile DSL2 modules, validate config and assembly inputs,
+check gzip/sample IDs and errors, run the real harmonizer process, and verify
+that a missing AMRFinderPlus executable fails the workflow. The optional legacy
+test runs actual BLAST+ and R against a tiny synthetic no-hit input/reference.
+Missing Nextflow or legacy dependencies are reported as skips.
+
+`tests/test-run.R` is retained as a legacy demonstration, not part of the
+lightweight suite. It invokes a fixed-path script against historical large
+inputs, can inspect stale output and is not safe as an isolated regression test.
+Its known limitations are documented in README.md.
+
+## Coverage
+
+CI uses coverage.py 7.10.6 (development dependency only):
+
+```bash
+python3 -m pip install coverage==7.10.6
+python3 -m coverage run --branch --source=bin -m unittest discover -s tests -p test_amrscan.py -v
+python3 -m coverage report --show-missing --fail-under=90
+```
+
+When that package is unavailable, Python's standard `trace` tool measures line
+coverage (not branch coverage):
+
+```bash
+python3 -m trace --count --summary --missing --coverdir .test-results/coverage \
+  --module unittest discover -s tests -p test_amrscan.py
+```
+
+Inspect `bin.amrscan` in the output and `bin.amrscan.cover`; imported standard
+library and test-module coverage is not production-code coverage. Nextflow and
+legacy R are covered by executed scenarios, not by this Python percentage.
+
+## Fixture provenance and integration limitations
+
+`fixtures/amrfinder_v4.0.23.tsv` is an **unmodified** copy of NCBI's
+[`test_dna.expected` at tag `amrfinder_v4.0.23`](https://github.com/ncbi/amr/blob/amrfinder_v4.0.23/test_dna.expected).
+Upstream Git blob: `37ddb555d52dacba5ffaff07f04a9a5f30541f8e`.
+The test checks conversion of this upstream expectation, not AMRFinderPlus
+execution against today's database. Neither the runtime database release nor
+local caller version is asserted; fixture provenance explicitly uses
+`upstream_fixture` and `NA` for those fields. NCBI's public-domain notice is
+retained in `fixtures/NCBI-LICENSE.txt`.
+
+`fixtures/tiny.fna` is a short synthetic sequence for path and no-hit plumbing
+tests, not a positive AMR control. The dummy database marker used by unit tests
+is not a biological database. No mock calls or fixtures are accepted by the
+production Nextflow caller path as successful real AMRFinderPlus executions.
+
+A real integration test requires AMRFinderPlus, its dependencies, an immutable
+indexed database release, and known positive/negative control assemblies. That
+test has not been executed in this environment; PR #2 should add a reproducible
+integration profile with archived expected evidence and provenance.

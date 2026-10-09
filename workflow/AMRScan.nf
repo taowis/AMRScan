@@ -1,6 +1,9 @@
 #!/usr/bin/env nextflow
 
 /*
+ * LEGACY CARD/BLAST workflow, retained for historical reproduction.
+ * New modular entry point: ../main.nf. Highest bitscore is a display ranking,
+ * not proof of biological function or phenotypic resistance.
  * AMRScan - Antimicrobial Resistance Gene Scanner
  * Nextflow implementation of the R-based AMR detection pipeline
  */
