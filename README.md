@@ -2,9 +2,9 @@
 
 AMRScan v2 is evolving from a BLAST-based resistance gene scanner into a modular
 framework for AMR genotyping, phenotype prediction, benchmarking, and
-generalisability studies. This foundation PR implements **AMR determinant
-calling and evidence-preserving harmonization**. Phenotype prediction, AST
-integration, and machine learning are future, separate layers.
+generalisability studies. It implements **AMR determinant calling,
+evidence-preserving harmonization, and public AST cohort construction**.
+Phenotype prediction and machine learning remain future, separate layers.
 
 A sequence match does not by itself establish phenotypic resistance. A negative
 report also does not establish susceptibility. Retain caller methods, database
@@ -111,6 +111,23 @@ report and provenance remain available. Failed calls never produce harmonized
 results; task logs and failure provenance remain in the Nextflow work directory.
 Use a fresh output directory per experiment to avoid confusing old and new files.
 
+## AST datasets
+
+The separate AST builder archives official NCBI Pathogen Detection tables and
+constructs an auditable *E. coli* cohort. It retains submitter phenotypes,
+measurements, genome links, metadata, duplicates, conflicts and source hashes.
+
+```bash
+python3 bin/ast_dataset.py download --outdir datasets/ecoli/raw
+python3 bin/ast_dataset.py build --snapshot datasets/ecoli/raw --outdir datasets/ecoli/processed
+python3 bin/ast_dataset.py validate --snapshot datasets/ecoli/raw --processed datasets/ecoli/processed
+```
+
+AMRScan does not infer phenotypic resistance from the presence of an AMR gene.
+AST phenotype and genomic AMR determinants remain separate evidence layers.
+See the [AST builder guide](docs/ast-dataset-builder.md) for offline examples,
+source contracts, eligibility rules and validation limits.
+
 ## Legacy compatibility
 
 `workflow/AMRScan.nf`, its adjacent config, `scripts/AMRScan.R`, the R Markdown
@@ -142,6 +159,7 @@ legacy FASTQ validation belong in a separate compatibility PR.
 ```bash
 # Offline caller-wrapper and harmonization tests; no third-party Python packages
 python3 -m unittest discover -s tests -p test_amrscan.py -v
+python3 -m unittest discover -s tests -p test_ast_dataset.py -v
 
 # Nextflow syntax/config, error handling, actual harmonization process, optional legacy smoke
 python3 -m unittest discover -s tests -p test_nextflow.py -v
@@ -166,7 +184,7 @@ main.nf                 v2 entry point
 nextflow.config         v2 defaults
 workflow/               Legacy entry point/config
 scripts/                Legacy standalone R demonstration
-schemas/                Future AST interface contract
+schemas/                AST raw and normalized schema contracts
 training/               AST ingestion and future model-training contracts
 benchmark/              Lineage/country/time evaluation contract
 tests/                  Small fixtures and automated tests
@@ -175,11 +193,10 @@ paper/                  Historical manuscripts, retained
 data/, db/, results/    Historical tracked examples; new generated files ignored
 ```
 
-PR #2 should validate real AMRFinderPlus runs with a pinned software/database
-environment, known positive/negative controls, and multi-sample provenance.
-Follow with AST ingestion and explicit assay/breakpoint metadata, additional
-caller adapters (RGI/CARD and ResFinder), and leakage-aware evaluation. Full ML
-implementation is deliberately outside this foundation PR. See
+Next, validate real AMRFinderPlus runs with a pinned software/database
+environment, known positive/negative controls, and cohort accession provenance.
+Further work includes adjudicating AST assay/breakpoint metadata, additional
+caller adapters (RGI/CARD and ResFinder), and leakage-aware evaluation. See
 [training](training/README.md), [benchmark](benchmark/README.md), and
 [tracked-data cleanup notes](docs/tracked-data-audit.md).
 

@@ -1,4 +1,4 @@
-# Future training and phenotype layer — interface only
+# Future model-training interface
 
 No model training or phenotype prediction is implemented in this PR.
 Genotype features will consume schema-versioned harmonized calls plus caller
@@ -8,7 +8,9 @@ provenance. Observed AST measurements must arrive independently through
 A future training entry point should accept:
 
 - genotype table and immutable provenance references;
-- AST table conforming to `schemas/ast.tsv` and an explicit isolate mapping;
+- AST table conforming to `schemas/ast.tsv`, its snapshot manifest and an explicit
+  isolate mapping; the [dataset builder](../docs/ast-dataset-builder.md) supplies
+  observed phenotypes and conservative endpoint eligibility;
 - a frozen split manifest from `benchmark/`;
 - a versioned feature/label policy, seed and model configuration.
 

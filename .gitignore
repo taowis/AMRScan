@@ -12,6 +12,9 @@
 /db/
 /data/
 /databases/
+/datasets/
+/raw/
+/processed/
 work/
 .nextflow/
 .nextflow.*
