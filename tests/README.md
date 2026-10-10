@@ -5,6 +5,7 @@ Run from the repository root:
 ```bash
 python3 -m unittest discover -s tests -p test_amrscan.py -v
 python3 -m unittest discover -s tests -p test_ast_dataset.py -v
+python3 -m unittest discover -s tests -p test_amrfinder_validation.py -v
 python3 -m unittest discover -s tests -p test_nextflow.py -v
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 ```
@@ -23,6 +24,12 @@ check gzip/sample IDs and errors, run the real harmonizer process, and verify
 that a missing AMRFinderPlus executable fails the workflow. The optional legacy
 test runs actual BLAST+ and R against a tiny synthetic no-hit input/reference.
 Missing Nextflow or legacy dependencies are reported as skips.
+
+`test_amrfinder_validation.py` builds a synthetic one-isolate package, mocked
+caller provenance and AST rows. It checks exact-PDT linkage, Assembly/BioSample
+and caller hashes, conflict/nonbinary observation retention, explicit no-call
+status, deterministic counts and safe output publication. It does not run an
+AMRFinderPlus binary, retrieve an NCBI assembly or provide biological evidence.
 
 `tests/test-run.R` is retained as a legacy demonstration, not part of the
 lightweight suite. It invokes a fixed-path script against historical large
@@ -67,10 +74,10 @@ tests, not a positive AMR control. The dummy database marker used by unit tests
 is not a biological database. No mock calls or fixtures are accepted by the
 production Nextflow caller path as successful real AMRFinderPlus executions.
 
-A real integration test requires AMRFinderPlus, its dependencies, an immutable
-indexed database release, and known positive/negative control assemblies. That
-test has not been executed in this environment; a later PR should add a reproducible
-integration profile with archived expected evidence and provenance.
+A real integration run requires AMRFinderPlus, its dependencies, an immutable
+indexed database release, and known positive/negative caller controls. It has
+not been executed in this environment. The validation CLI can link and audit
+real artifacts once they exist; it does not substitute for that run.
 
 ## AST fixtures and scenarios
 

@@ -176,7 +176,8 @@ validation without AMR databases. AMRFinderPlus integration remains pending.
 ## Directory layout and next steps
 
 ```text
-bin/                    Python caller/provenance and harmonization CLI
+bin/                    Python retrieval, caller/provenance, harmonization and
+                        evidence-linking CLIs
 conf/                   Executor/resource defaults
 modules/local/          DSL2 caller and harmonization modules
 workflows/              Composable v2 orchestration
@@ -200,10 +201,12 @@ caller adapters (RGI/CARD and ResFinder), and leakage-aware evaluation. See
 [training](training/README.md), [benchmark](benchmark/README.md), and
 [tracked-data cleanup notes](docs/tracked-data-audit.md).
 
-The accession-verified AMRFinderPlus validation implementation and its current
-limits are described in [docs/amrfinder-validation.md](docs/amrfinder-validation.md).
-The validation cohort manifest is currently empty because no Assembly-linked
-AST isolate could be verified in the network-restricted development environment.
+The accession-verified AMRFinderPlus retrieval, evidence-linking and
+deterministic summary implementation is described in
+[docs/amrfinder-validation.md](docs/amrfinder-validation.md).
+Its software paths are offline-tested, but no complete AST snapshot, assembly
+FASTA, AMRFinderPlus run or real cohort has been validated. The cohort manifest
+remains empty, and the PR stays Draft until the documented real-data chain passes.
 
 ## Citation and license
 
