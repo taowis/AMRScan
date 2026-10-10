@@ -35,7 +35,7 @@ CI uses coverage.py 7.10.6 (development dependency only):
 
 ```bash
 python3 -m pip install coverage==7.10.6
-python3 -m coverage run --branch --source=bin -m unittest discover -s tests -p 'test_a*.py' -v
+python3 -m coverage run --branch --source=bin -m unittest discover -s tests -p 'test_*.py' -v
 python3 -m coverage report --show-missing --fail-under=90
 ```
 

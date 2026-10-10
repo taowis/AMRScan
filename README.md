@@ -200,6 +200,11 @@ caller adapters (RGI/CARD and ResFinder), and leakage-aware evaluation. See
 [training](training/README.md), [benchmark](benchmark/README.md), and
 [tracked-data cleanup notes](docs/tracked-data-audit.md).
 
+The accession-verified AMRFinderPlus validation implementation and its current
+limits are described in [docs/amrfinder-validation.md](docs/amrfinder-validation.md).
+The validation cohort manifest is currently empty because no Assembly-linked
+AST isolate could be verified in the network-restricted development environment.
+
 ## Citation and license
 
 Lai, K. (2025). *AMRScan: A hybrid R and Nextflow toolkit for rapid antimicrobial
