@@ -4,6 +4,7 @@ Run from the repository root:
 
 ```bash
 python3 -m unittest discover -s tests -p test_amrscan.py -v
+python3 -m unittest discover -s tests -p test_ast_dataset.py -v
 python3 -m unittest discover -s tests -p test_nextflow.py -v
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 ```
@@ -34,7 +35,7 @@ CI uses coverage.py 7.10.6 (development dependency only):
 
 ```bash
 python3 -m pip install coverage==7.10.6
-python3 -m coverage run --branch --source=bin -m unittest discover -s tests -p test_amrscan.py -v
+python3 -m coverage run --branch --source=bin -m unittest discover -s tests -p 'test_a*.py' -v
 python3 -m coverage report --show-missing --fail-under=90
 ```
 
@@ -43,7 +44,7 @@ coverage (not branch coverage):
 
 ```bash
 python3 -m trace --count --summary --missing --coverdir .test-results/coverage \
-  --module unittest discover -s tests -p test_amrscan.py
+  --module unittest discover -s tests -p 'test_a*.py'
 ```
 
 Inspect `bin.amrscan` in the output and `bin.amrscan.cover`; imported standard
@@ -68,5 +69,19 @@ production Nextflow caller path as successful real AMRFinderPlus executions.
 
 A real integration test requires AMRFinderPlus, its dependencies, an immutable
 indexed database release, and known positive/negative control assemblies. That
-test has not been executed in this environment; PR #2 should add a reproducible
+test has not been executed in this environment; a later PR should add a reproducible
 integration profile with archived expected evidence and provenance.
+
+## AST fixtures and scenarios
+
+`fixtures/ast.synthetic.tsv` and `fixtures/isolates.synthetic.tsv` each contain
+one invented record. Accessions and phenotype/MIC combinations are test values,
+not clinical observations or breakpoint examples. Their headers match the
+explicit NCBI export projections inspected on 2026-10-10. Tests derive tiny
+mutations and combinations for missing values, S/I/R/SDD/NS/HLAR/ND categories,
+unknown names, MIC syntax, partial dates, country/source rules, duplicates,
+conflicts, strict schema failures, provenance, transport failure and rebuilding.
+Transport tests mock HTTP bytes and reported counts; no unit test uses a network.
+
+The real, narrowly selected source check is recorded in
+[AST validation](../docs/ast-validation.md). Downloaded tables remain outside Git.
